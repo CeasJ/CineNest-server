@@ -1,0 +1,36 @@
+services:
+  authentication-service:
+    container_name: authentication-service
+    image: ceas/authentication-service:latest
+    build:
+      context: ./authentication
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3001:3001"
+    environment:
+        - postgres_
+    #   - CHOKIDAR_USEPOLLING=true
+    volumes:
+      - .:/authentication:/app
+      - /app/node_modules
+    env_file:
+      - ./authentication/.env
+    networks:
+      - microservices-network
+
+  postgres-auth:
+    container_name: postgres-auth
+    image: postgres:17
+    environment:
+      POSTGRES_USER: ${DATABASE_USERNAME}
+      POSTGRES_PASSWORD: ${DATABASE_PASSWORD}
+      POSTGRES_DB: ${DATABASE_TYPE}
+    ports:
+      - ${DATABASE_PORT}:5432
+    networks:
+      - microservices-network
+    restart: unless-stopped
+    
+networks:
+  microservices-network:
+    driver: bridge
