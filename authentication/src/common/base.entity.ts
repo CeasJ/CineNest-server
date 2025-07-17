@@ -20,7 +20,7 @@ export abstract class BaseEntity {
   updatedAt: Date;
 
   @DeleteDateColumn({
-    name: 'updated_at',
+    name: 'deleted_at',
   })
   deletedAt: Date;
 }
