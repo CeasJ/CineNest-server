@@ -1,8 +1,9 @@
 import { BaseEntity } from 'src/common/base.entity';
-import { Column, Entity, ManyToOne, OneToOne } from 'typeorm';
+import { Column, Entity, ManyToOne, OneToMany, OneToOne } from 'typeorm';
 import { Profile } from './profile';
 import { Role } from './role';
 import { UserStatus } from 'src/common/enum';
+import { RefreshToken } from './token';
 
 @Entity()
 export class Account extends BaseEntity {
@@ -21,6 +22,9 @@ export class Account extends BaseEntity {
   @OneToOne(() => Profile, (profile) => profile.account)
   profile: Profile;
 
-  @ManyToOne(() => Role, (Role) => Role.account)
+  @ManyToOne(() => Role, (role) => role.account)
   Role: Role;
+
+  @OneToMany(() => RefreshToken, (token) => token.account)
+  RefreshToken: RefreshToken[];
 }

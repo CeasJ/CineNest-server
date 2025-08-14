@@ -9,6 +9,8 @@ RUN pnpm install
 
 COPY . .
 
-# ENV CHOKIDAR_USEPOLLING=true
+ENV CHOKIDAR_USEPOLLING=true
+ENV CHOKIDAR_INTERVAL=100
+ENV WATCHPACK_POLLING=true
 
-CMD ["pnpm", "start:dev"]
+CMD ["pnpm", "run" , "start:dev"]

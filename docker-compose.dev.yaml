@@ -8,13 +8,14 @@ services:
     ports:
       - "3001:3001"
     environment:
-        - postgres_
-    #   - CHOKIDAR_USEPOLLING=true
+        - CHOKIDAR_USEPOLLING=true
+        - CHOKIDAR_INTERVAL=100
+        - WATCHPACK_POLLING=true
     volumes:
-      - .:/authentication:/app
+      - ./authentication:/app
       - /app/node_modules
     env_file:
-      - .env
+      - ./authentication/.env
     networks:
       - microservices-network
 

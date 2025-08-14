@@ -6,19 +6,19 @@ import { AccountModule } from './modules/account/account.module';
 import { ProfileModule } from './modules/profile/profile.module';
 import { RoleModule } from './modules/role/role.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { TokenModule } from './modules/token/token.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-      expandVariables: true,
-      envFilePath: '.env',
     }),
     TypeOrmModule.forRoot(postgresOptions),
     AccountModule,
     ProfileModule,
     RoleModule,
     AuthModule,
+    TokenModule,
   ],
   controllers: [],
   providers: [],

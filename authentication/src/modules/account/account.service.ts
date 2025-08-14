@@ -1,29 +1,103 @@
-import { Body, Injectable, Req } from '@nestjs/common';
+import {
+  BadRequestException,
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Account } from 'src/entity/account';
-import { Repository } from 'typeorm';
-import { CreateAccountRequest } from './dtos/request/create-account.dto';
-import { plainToClass, plainToInstance } from 'class-transformer';
-import { Profile } from 'src/entity';
-import { RegisterResponse } from './dtos/response/register-response.dto';
+import { DeepPartial, Repository } from 'typeorm';
 import { AccountDto } from './dtos/account.dto';
+import { CreateAccountRequest } from './dtos/request/create-account-request.dto';
+import { transformToDTO } from 'src/common/transform.ultil';
+import { UserStatus } from 'src/common/enum';
+import { ChangePasswordRequest } from './dtos/request/change-password-request.dto';
+import { ProfileService } from '../profile/profile.service';
+import { compare } from 'bcrypt';
+import { hash } from 'src/helper/security';
 
 @Injectable()
 export class AccountService {
   constructor(
     @InjectRepository(Account)
-    private accountRepo: Repository<Account>,
-    @InjectRepository(Profile)
-    private profileRepo: Repository<Profile>,
+    private readonly accountRepo: Repository<Account>,
+    private readonly profileService: ProfileService,
   ) {}
 
-  async create(@Body() data: CreateAccountRequest): Promise<AccountDto> {
-    const save = await this.accountRepo.save(data);
-    return plainToInstance(AccountDto, save);
+  // Find account by Account Id
+  async findById(id: string): Promise<AccountDto> {
+    return await this.accountRepo.findOne({ where: { id } });
   }
 
-  async findAll(): Promise<AccountDto[]> {
-    const result = await this.accountRepo.find();
-    return plainToInstance(AccountDto, result);
+  // Find Account by phone or Email
+  async findByUsernameOrEmail(username: string): Promise<AccountDto> {
+    return await this.accountRepo.findOne({
+      where: [{ email: username }, { phone: username }],
+    });
   }
+
+  // Save account into database
+  async create(data: CreateAccountRequest): Promise<AccountDto> {
+    if (await this.findByUsernameOrEmail(data.phone || data.email)) {
+      throw new ConflictException('This personal information already exists');
+    }
+
+    const hashPassword = await hash(data.password);
+
+    const saved = await this.accountRepo.save({
+      ...data,
+      password: hashPassword,
+    });
+
+    return transformToDTO(AccountDto, saved);
+  }
+
+  async update(id: string, data: DeepPartial<Account>): Promise<AccountDto> {
+    const user = await this.findById(id);
+    if (!user) {
+      throw new NotFoundException('Cannot find account');
+    }
+
+    const hashPassword = await hash(data.password);
+    const saved = this.accountRepo.update(id, {
+      ...data,
+      password: hashPassword,
+    });
+
+    return transformToDTO(AccountDto, saved);
+  }
+
+  // Soft delete
+  async delete(id: string) {
+    const account = await this.findById(id);
+    if (!account) throw new NotFoundException('Account not found');
+    return await this.accountRepo.softDelete(id);
+  }
+
+  // Change account status into active
+  async activeAccount(id: string) {
+    return await this.accountRepo.update(id, { active: UserStatus.ACTIVE });
+  }
+
+  // Change account status into inactive
+  async inactiveAccount(id: string) {
+    return await this.accountRepo.update(id, { active: UserStatus.NOT_ACTIVE });
+  }
+
+  // User changes the password
+  async changePassword(
+    id: string,
+    data: ChangePasswordRequest,
+  ): Promise<AccountDto> {
+    const account = await this.findById(id);
+    if (!account) throw new NotFoundException('Account not found');
+    if (!(await compare(data.currentPassword, account.password)))
+      throw new BadRequestException('Old password not match');
+    const hashPassword = await hash(data.newPassword);
+    return await this.update(id, { password: hashPassword });
+  }
+
+
+
+
 }
