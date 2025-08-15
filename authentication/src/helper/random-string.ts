@@ -10,3 +10,6 @@ export function randomString(length: number): string {
 
   return result;
 }
+export function randomCode(): number {
+  return Math.floor(100000 + Math.random() * 900000);
+}

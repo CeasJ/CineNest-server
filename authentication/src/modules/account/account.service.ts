@@ -96,8 +96,4 @@ export class AccountService {
     const hashPassword = await hash(data.newPassword);
     return await this.update(id, { password: hashPassword });
   }
-
-
-
-
 }

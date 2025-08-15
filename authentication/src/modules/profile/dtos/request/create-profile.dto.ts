@@ -1,7 +1,6 @@
-import { AccountDto } from '../../account/dtos/account.dto';
-export class ProfileDto {
-  id: string;
+import { AccountDto } from 'src/modules/account/dtos/account.dto';
 
+export class CreateProfileRequestDto {
   firstName: string;
 
   lastName: string;

@@ -6,16 +6,13 @@ import {
   UnauthorizedException,
 } from '@nestjs/common';
 import { LoginRequest } from './dtos/request/login-request.dto';
-import { AccountDto } from '../account/dtos/account.dto';
 import { RegisterRequestDto } from './dtos/request/register-request.dto';
-import { transformToDTO } from 'src/common/transform.ultil';
 import refreshTokenConfig from 'src/config/refresh-token.config';
 import { ConfigType } from '@nestjs/config';
 import resetTokenConfig from 'src/config/reset-token.config';
 import { JwtService } from '@nestjs/jwt';
 import { AccountService } from '../account/account.service';
 import { compare } from 'bcrypt';
-import { ProfileService } from '../profile/profile.service';
 import { hash } from 'src/helper/security';
 import { RegisterResponse } from '../account/dtos/response/register-response.dto';
 import { LoginResponseDto } from './dtos/response/login-response.dto';
@@ -24,6 +21,10 @@ import { JwtPayload } from 'src/helper/jwt.payload';
 import { Repository } from 'typeorm';
 import { RefreshToken } from 'src/entity/token';
 import { InjectRepository } from '@nestjs/typeorm';
+import { UserStatus } from 'src/common/enum';
+import { ProfileService } from '../profile/profile.service';
+import { randomCode } from '../../helper/random-string';
+import { AuthenticationCode } from 'src/entity/authentication-code';
 
 @Injectable()
 export class AuthService {
@@ -34,9 +35,11 @@ export class AuthService {
     @Inject(resetTokenConfig.KEY)
     private readonly resetTknConfig: ConfigType<typeof resetTokenConfig>,
     private readonly jwtService: JwtService,
-
+    private readonly profileService: ProfileService,
     @InjectRepository(RefreshToken)
     private readonly tokenRepo: Repository<RefreshToken>,
+    @InjectRepository(AuthenticationCode)
+    private readonly authenRepo: Repository<AuthenticationCode>,
   ) {}
 
   async generateTokens(userId: string, email: string): Promise<IToken> {
@@ -48,12 +51,39 @@ export class AuthService {
     return { accessToken, refreshToken };
   }
 
+  async generateAuthenCode(id: string) {
+    const authCode = randomCode();
+    return this.authenRepo.save({
+      code: authCode,
+      accountId: id,
+      expiredTime: (Date.now() + 60 * 5).toString(),
+      isUsed: false,
+    });
+  }
+
+  async useAuthenCode(authenCode: number, accountId: string) {
+    const find = await this.authenRepo.findOne({
+      where: {
+        code: authenCode,
+        accountId: accountId,
+      },
+    });
+    if (!find) throw new NotFoundException('Account not found');
+    if (Date.parse(find.expiredTime) < Date.now())
+      throw new UnauthorizedException('Expired code');
+    await this.authenRepo.update(find.id, { isUsed: true });
+  }
+
   async login(data: LoginRequest): Promise<LoginResponseDto> {
     const findExist = await this.accountService.findByUsernameOrEmail(
       data.username,
     );
     if (!findExist) {
       throw new NotFoundException('Account not found');
+    }
+
+    if (findExist.active !== UserStatus.ACTIVE) {
+      throw new UnauthorizedException("Account hasn't activated yet!");
     }
     const hashPassword = await hash(data.password);
     const isPasswordMatch = compare(findExist.password, hashPassword);
@@ -95,7 +125,15 @@ export class AuthService {
       password: hashPassword,
     });
 
-    return { account };
+    await this.profileService.create({
+      firstName: data.firstname,
+      lastName: data.lastname,
+      address: data.address,
+      gender: data.gender,
+      account: account,
+    });
+
+    return { email: account.email, phone: account.phone };
   }
 
   async logout(refreshToken: string) {

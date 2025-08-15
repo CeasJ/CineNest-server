@@ -9,15 +9,18 @@ import resetTokenConfig from 'src/config/reset-token.config';
 import { AccountModule } from '../account/account.module';
 import { JwtModule } from '@nestjs/jwt';
 import { RefreshToken } from 'src/entity/token';
+import { ProfileModule } from '../profile/profile.module';
+import { AuthenticationCode } from 'src/entity/authentication-code';
 
 @Module({
   imports: [
     JwtModule.registerAsync(jwtConfig.asProvider()),
-    TypeOrmModule.forFeature([RefreshToken]),
+    TypeOrmModule.forFeature([RefreshToken, AuthenticationCode]),
     ConfigModule.forFeature(jwtConfig),
     ConfigModule.forFeature(refreshTokenConfig),
     ConfigModule.forFeature(resetTokenConfig),
     AccountModule,
+    ProfileModule,
   ],
   providers: [AuthService],
   controllers: [AuthController],

@@ -4,6 +4,7 @@ import { Profile } from 'src/entity';
 import { Repository } from 'typeorm';
 import { ProfileDto } from './dtos/profile.dto';
 import { transformToDTO } from 'src/common/transform.ultil';
+import { CreateProfileRequestDto } from './dtos/request/create-profile.dto';
 
 @Injectable()
 export class ProfileService {
@@ -12,7 +13,7 @@ export class ProfileService {
     private readonly profileRepo: Repository<Profile>,
   ) {}
 
-  async create(data: ProfileDto): Promise<ProfileDto> {
+  async create(data: CreateProfileRequestDto): Promise<ProfileDto> {
     const saved = await this.profileRepo.save({ ...data });
     return transformToDTO(ProfileDto, saved);
   }
