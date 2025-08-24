@@ -53,54 +53,54 @@ export class AuthService {
 
   async generateAuthenCode(id: string) {
     const authCode = randomCode();
+    const account = await this.accountService.findEntityById(id);
     return this.authenRepo.save({
       code: authCode,
       accountId: id,
+      account: account,
       expiredTime: (Date.now() + 60 * 5).toString(),
       isUsed: false,
     });
   }
 
-  async useAuthenCode(authenCode: number, accountId: string) {
+  // OTP verification for active the account
+  async verifyOTP(authenCode: number, accountId: string) {
     const find = await this.authenRepo.findOne({
       where: {
-        code: authenCode,
         accountId: accountId,
       },
     });
     if (!find) throw new NotFoundException('Account not found');
     if (Date.parse(find.expiredTime) < Date.now())
       throw new UnauthorizedException('Expired code');
+    const isTrue = await compare(authenCode, find.code);
+    if (!isTrue) throw new ConflictException('Confirm code does not match');
     await this.authenRepo.update(find.id, { isUsed: true });
   }
 
   async login(data: LoginRequest): Promise<LoginResponseDto> {
-    const findExist = await this.accountService.findByUsernameOrEmail(
-      data.username,
-    );
-    if (!findExist) {
+    const account = await this.accountService.findByPhoneOrEmail(data.username);
+    if (!account) {
       throw new NotFoundException('Account not found');
     }
 
-    if (findExist.active !== UserStatus.ACTIVE) {
+    const entity = await this.accountService.findEntityById(account.id);
+
+    if (account.active !== UserStatus.ACTIVE) {
       throw new UnauthorizedException("Account hasn't activated yet!");
     }
     const hashPassword = await hash(data.password);
-    const isPasswordMatch = compare(findExist.password, hashPassword);
+    const isPasswordMatch = compare(entity.password, hashPassword);
     if (!isPasswordMatch) {
       throw new UnauthorizedException('Invalid username or password');
     }
-
-    const account = await this.accountService.findByUsernameOrEmail(
-      data.username,
-    );
 
     const { accessToken, refreshToken } = await this.generateTokens(
       account.id,
       account.email,
     );
 
-    await this.tokenRepo.save({ token: refreshToken, account: account });
+    await this.tokenRepo.save({ token: refreshToken, account: entity });
 
     return {
       id: account.id,
@@ -109,31 +109,46 @@ export class AuthService {
     };
   }
 
+  // Register an account and send the OTP code into its mail
   async register(data: RegisterRequestDto): Promise<RegisterResponse> {
-    const findExist = await this.accountService.findByUsernameOrEmail(
-      data.phone || data.email,
-    );
-    if (findExist) {
-      throw new ConflictException('User already exist');
-    }
-
-    const hashPassword = await hash(data.password);
-
-    const account = await this.accountService.create({
-      email: data.email,
-      phone: data.phone,
-      password: hashPassword,
-    });
-
-    await this.profileService.create({
+    const profile = await this.profileService.create({
       firstName: data.firstname,
       lastName: data.lastname,
       address: data.address,
       gender: data.gender,
-      account: account,
+    });
+    const account = await this.accountService.create({
+      email: data.email,
+      phone: data.phone,
+      password: data.password,
+      profileId: profile.id,
     });
 
-    return { email: account.email, phone: account.phone };
+    // Generate the authen code for account activation
+    const otp = await this.generateAuthenCode(account.id);
+
+    return {
+      email: account.email,
+      phone: account.phone,
+      code: otp.code,
+      // For API testing - Remove later
+    };
+  }
+
+  // Resend the code if the user cannot get the it (like accidently refresh the page)
+  async resendOtp(
+    username: string,
+  ): Promise<{ email?: string; phone?: string; code: number }> {
+    const account = await this.accountService.findByPhoneOrEmail(username);
+    if (!account) throw new NotFoundException('Cannot find user');
+
+    const otp = await this.generateAuthenCode(account.id);
+
+    return {
+      email: account.email,
+      phone: account.phone,
+      code: otp.code,
+    };
   }
 
   async logout(refreshToken: string) {

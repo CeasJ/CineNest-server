@@ -23,12 +23,11 @@ export class AccountController {
 
   @Get('/:username')
   findByUsername(@Param('username') username: string) {
-    return this.accountService.findByUsernameOrEmail(username);
+    return this.accountService.findByPhoneOrEmail(username);
   }
 
   @Get('/:id')
   findById(@Param('id') id: string) {
     return this.accountService.findById(id);
   }
-
 }

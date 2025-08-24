@@ -19,6 +19,26 @@ services:
     networks:
       - microservices-network
 
+  notification-service:
+    container_name: notification-service
+    image: ceas/notification-service:latest
+    build:
+      context: ./notification
+      dockerfile: Dockerfile.dev
+    ports:
+      - "3002:3002"
+    environment:
+        - CHOKIDAR_USEPOLLING=true
+        - CHOKIDAR_INTERVAL=100
+        - WATCHPACK_POLLING=true
+    volumes:
+      - ./notification:/app
+      - /app/node_modules
+    env_file:
+      - ./notification/.env
+    networks:
+      - microservices-network
+
   postgres-auth:
     container_name: postgres-auth
     image: postgres:17
@@ -31,6 +51,28 @@ services:
     networks:
       - microservices-network
     restart: unless-stopped
+
+  # kafka:
+  #   container_name: kafka
+  #   image: confluentinc/cp-kafka:latest
+  #   ports:
+  #     - "9092:9092"
+  #   environment:
+  #     KAFKA_KRAFT_MODE: "true"  # This enables KRaft mode in Kafka.
+  #     KAFKA_PROCESS_ROLES: controller,broker  # Kafka acts as both broker and controller.
+  #     KAFKA_NODE_ID: 1  # A unique ID for this Kafka instance.
+  #     KAFKA_CONTROLLER_QUORUM_VOTERS: "1@localhost:9092"  # Defines the controller voters.
+  #     KAFKA_LISTENERS: PLAINTEXT://0.0.0.0:9092,CONTROLLER://0.0.0.0:9093
+  #     KAFKA_LISTENER_SECURITY_PROTOCOL_MAP: PLAINTEXT:PLAINTEXT,CONTROLLER:PLAINTEXT
+  #     KAFKA_INTER_BROKER_LISTENER_NAME: PLAINTEXT
+  #     KAFKA_CONTROLLER_LISTENER_NAMES: CONTROLLER
+  #     KAFKA_ADVERTISED_LISTENERS: PLAINTEXT://localhost:9092
+  #     KAFKA_LOG_DIRS: /var/lib/kafka/data  # Where Kafka stores its logs.
+  #     KAFKA_AUTO_CREATE_TOPICS_ENABLE: "true"  # Kafka will automatically create topics if needed.
+  #     KAFKA_OFFSETS_TOPIC_REPLICATION_FACTOR: 1  # Since we’re running one broker, one replica is enough.
+  #     KAFKA_LOG_RETENTION_HOURS: 168  # Keep logs for 7 days.
+  #     KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 0  # No delay for consumer rebalancing.
+  #     CLUSTER_ID: "Mk3OEYBSD34fcwNTJENDM2Qk"  # A unique ID for the Kafka cluster.
     
 networks:
   microservices-network:

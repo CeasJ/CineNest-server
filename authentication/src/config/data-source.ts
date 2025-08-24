@@ -4,6 +4,7 @@ import { config } from 'dotenv';
 import { Account } from 'src/entity/account';
 import { Profile, Role } from 'src/entity';
 import { RefreshToken } from 'src/entity/token';
+import { AuthenticationCode } from 'src/entity/authentication-code';
 
 config({ path: join(process.cwd(), '.env') });
 
@@ -19,7 +20,7 @@ export const postgresOptions: DataSourceOptions = {
   synchronize: true,
   // keepConnectionAlive: true,
   // logging: process.env.NODE_ENV !== 'production',
-  entities: [Account, Profile, Role, RefreshToken], // migrations: [__dirname + '/migrations/**/*{.ts,.js}'],
+  entities: [Account, Profile, Role, RefreshToken, AuthenticationCode], // migrations: [__dirname + '/migrations/**/*{.ts,.js}'],
 };
 
 console.log(postgresOptions);

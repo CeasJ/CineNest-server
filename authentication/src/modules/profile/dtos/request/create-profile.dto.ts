@@ -1,5 +1,3 @@
-import { AccountDto } from 'src/modules/account/dtos/account.dto';
-
 export class CreateProfileRequestDto {
   firstName: string;
 
@@ -9,5 +7,5 @@ export class CreateProfileRequestDto {
 
   gender: number;
 
-  account: AccountDto;
+  accountId?: string;
 }

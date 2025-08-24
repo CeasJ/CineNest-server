@@ -1,6 +1,13 @@
-import { Column, ManyToOne, PrimaryGeneratedColumn } from 'typeorm';
+import {
+  Column,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  PrimaryGeneratedColumn,
+} from 'typeorm';
 import { Account } from './account';
 
+@Entity()
 export class AuthenticationCode {
   @PrimaryGeneratedColumn('uuid')
   id: string;
@@ -13,6 +20,10 @@ export class AuthenticationCode {
 
   @Column()
   accountId: string;
+
+  @ManyToOne(() => Account)
+  @JoinColumn({ name: 'accountId' })
+  account: Account;
 
   @Column({ nullable: true })
   expiredTime: string;

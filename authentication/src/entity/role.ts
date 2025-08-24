@@ -8,6 +8,6 @@ export class Role extends BaseEntity {
   @Column({ enum: UserRole })
   name: UserRole;
 
-  @OneToMany(() => Account, (account) => account.Role)
-  account: Account;
+  @OneToMany(() => Account, (account) => account.role)
+  account: Account[];
 }

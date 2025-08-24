@@ -1,6 +1,5 @@
-import { Exclude } from 'class-transformer';
 import { IsEmail, IsNotEmpty, IsString } from 'class-validator';
-import { Profile } from '../../../../entity/profile';
+import { RoleDto } from 'src/modules/role/dto/role.dto';
 
 export class CreateAccountRequest {
   @IsEmail()
@@ -10,14 +9,10 @@ export class CreateAccountRequest {
   @IsNotEmpty()
   phone: string;
 
-  @IsString()
   @IsNotEmpty()
-  @Exclude()
   password: string;
 
-  // @IsNotEmpty()
-  // profile: Profile;
+  // role?: RoleDto;
 
-  @IsString()
-  roleId?: string;
+  profileId: string;
 }

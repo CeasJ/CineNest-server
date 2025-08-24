@@ -26,22 +26,41 @@ export class AccountService {
 
   // Find account by Account Id
   async findById(id: string): Promise<AccountDto> {
-    return await this.accountRepo.findOne({ where: { id } });
+    const account = await this.accountRepo.findOne({
+      where: { id },
+      relations: ['role', 'profile', 'refreshTokens'],
+    });
+
+    return transformToDTO(AccountDto, account);
+  }
+
+  async findEntityById(id: string): Promise<Account> {
+    return this.accountRepo.findOne({ where: { id } });
   }
 
   // Find Account by phone or Email
-  async findByUsernameOrEmail(username: string): Promise<AccountDto> {
-    return await this.accountRepo.findOne({
-      where: [{ email: username }, { phone: username }],
+  async findByPhoneOrEmail(username: string): Promise<AccountDto | null> {
+    const where: any[] = [];
+
+    if (username.includes('@')) {
+      where.push({ email: username });
+    } else {
+      where.push({ phone: username });
+    }
+
+    const account = await this.accountRepo.findOne({
+      where,
+      relations: ['role', 'profile'],
     });
+
+    return account ? transformToDTO(AccountDto, account) : null;
   }
 
   // Save account into database
   async create(data: CreateAccountRequest): Promise<AccountDto> {
-    if (await this.findByUsernameOrEmail(data.phone || data.email)) {
+    if (await this.findByPhoneOrEmail(data.phone || data.email)) {
       throw new ConflictException('This personal information already exists');
     }
-
     const hashPassword = await hash(data.password);
 
     const saved = await this.accountRepo.save({
@@ -59,7 +78,7 @@ export class AccountService {
     }
 
     const hashPassword = await hash(data.password);
-    const saved = this.accountRepo.update(id, {
+    const saved = await this.accountRepo.update(id, {
       ...data,
       password: hashPassword,
     });
@@ -74,26 +93,21 @@ export class AccountService {
     return await this.accountRepo.softDelete(id);
   }
 
-  // Change account status into active
-  async activeAccount(id: string) {
-    return await this.accountRepo.update(id, { active: UserStatus.ACTIVE });
-  }
-
-  // Change account status into inactive
-  async inactiveAccount(id: string) {
-    return await this.accountRepo.update(id, { active: UserStatus.NOT_ACTIVE });
-  }
-
   // User changes the password
   async changePassword(
     id: string,
     data: ChangePasswordRequest,
   ): Promise<AccountDto> {
-    const account = await this.findById(id);
+    const account = await this.accountRepo.findOne({ where: { id } });
     if (!account) throw new NotFoundException('Account not found');
     if (!(await compare(data.currentPassword, account.password)))
       throw new BadRequestException('Old password not match');
     const hashPassword = await hash(data.newPassword);
     return await this.update(id, { password: hashPassword });
+  }
+
+  async resetPassword(id: string) {
+    const account = await this.findById(id);
+    if (!account) throw new NotFoundException('Account not found!');
   }
 }

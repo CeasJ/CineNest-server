@@ -1,20 +1,39 @@
-import { Exclude } from 'class-transformer';
+import { Exclude, Expose, Type } from 'class-transformer';
 import { IsEnum } from 'class-validator';
 import { UserStatus } from 'src/common/enum';
+import { RefreshToken } from 'src/entity/token';
 import { ProfileDto } from 'src/modules/profile/dtos/profile.dto';
+import { RoleDto } from 'src/modules/role/dto/role.dto';
 
+@Exclude()
 export class AccountDto {
+  @Expose()
   id: string;
 
-  email: string;
-
+  @Expose()
   phone: string;
 
-  @Exclude()
-  password: string;
+  @Expose()
+  email: string;
 
-  profile: ProfileDto;
-
-  @IsEnum(UserStatus)
+  @Expose()
   active: UserStatus;
+
+  @Expose()
+  roleId?: string;
+
+  @Expose()
+  profileId?: string;
+
+  @Expose()
+  @Type(() => RoleDto)
+  role?: RoleDto;
+
+  @Expose()
+  @Type(() => ProfileDto)
+  profile?: ProfileDto;
+
+  @Expose()
+  @Type(() => RefreshToken)
+  refreshTokens?: RefreshToken[];
 }

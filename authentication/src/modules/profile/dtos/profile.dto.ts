@@ -10,5 +10,5 @@ export class ProfileDto {
 
   gender: number;
 
-  account: AccountDto;
+  accountId?: string;
 }

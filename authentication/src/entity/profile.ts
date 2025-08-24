@@ -16,6 +16,11 @@ export class Profile extends BaseEntity {
   @Column()
   gender: number;
 
+  @Column({
+    nullable: true,
+  })
+  accountId?: string;
+
   @OneToOne(() => Account, (account) => account.profile)
   account: Account;
 }

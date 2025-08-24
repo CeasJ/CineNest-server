@@ -6,7 +6,7 @@ export class RefreshToken {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => Account, (account) => account.RefreshToken)
+  @ManyToOne(() => Account, (account) => account.refreshToken)
   account: Account;
 
   @Column({ unique: true })

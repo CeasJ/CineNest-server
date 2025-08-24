@@ -1,0 +1,16 @@
+FROM node:18-alpine AS base
+
+RUN corepack enable && corepack prepare pnpm@latest-10 --activate
+
+WORKDIR /app
+
+COPY package.json pnpm-lock.yaml ./
+RUN pnpm install
+
+COPY . .
+
+ENV CHOKIDAR_USEPOLLING=true
+ENV CHOKIDAR_INTERVAL=100
+ENV WATCHPACK_POLLING=true
+
+CMD ["pnpm", "run" , "start:dev"]
